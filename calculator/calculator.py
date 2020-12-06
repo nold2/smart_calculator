@@ -3,6 +3,7 @@ from functools import reduce
 
 
 class CustomError:
+    """A representation of errors"""
     def __init__(self, message):
         self.message = message
 
@@ -14,6 +15,7 @@ class CustomError:
 
 
 class Memory:
+    """A representation of memory to store variables as key along with their values"""
     def __init__(self):
         self.memory = {}
 
@@ -112,9 +114,6 @@ class Parser:
                     temp = [Operator(content)]
                 else:
                     temp.insert(0, Operator(content))
-
-    def get_command(self):
-        return self.__commands
 
     def get_parsed(self):
         return self.__parsed
@@ -223,6 +222,7 @@ class Calculator:
 
 
 class Validator:
+    """Validates user input before any actions occur"""
     def __init__(self, content, memory):
         self.content = content
         self.memory = memory
@@ -250,6 +250,9 @@ class Validator:
             return self.format(success=({key: value}))
 
         if Variable.is_valid(variable=self.content) and not self.is_in_memory(content=self.content):
+            return self.format(error=CustomError(message="Unknown variable"))
+
+        if len(self.content.split()) == 1 and not self.is_valid_assignee(content=self.content):
             return self.format(error=CustomError(message="Unknown variable"))
 
         else:
@@ -291,15 +294,16 @@ class Validator:
 
 
 class Translator:
+    """A class that translates to normal digits and operator, e.g.
+    > n = 2
+    > n + n # Translator will convert this into 2 + 2
+    """
+
     def __init__(self, equation):
         self.equation = equation
 
     def translate(self, memory):
         return [memory.get(val) if Variable.is_valid(val) else val for val in self.equation.split()]
-
-    @staticmethod
-    def format(success=None, error=None):
-        return success, error
 
 
 def main():
