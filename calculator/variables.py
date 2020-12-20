@@ -11,7 +11,7 @@ class Variable:
         return f"Variable {self.variable}"
 
     @staticmethod
-    def is_valid(variable):
+    def is_check(variable):
         alphabet = string.ascii_letters
         count = 0
         for k in variable:
