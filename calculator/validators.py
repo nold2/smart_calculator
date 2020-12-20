@@ -2,6 +2,7 @@ import re
 
 from commands import Command
 from exceptions import CustomError
+from operators import OPERATORS
 from tokens import Tokenizer
 from variables import Variable
 
@@ -44,7 +45,10 @@ class Validator:
         if self.is_open_and_close_bracket_balance(content=self.content):
             return self.format(error=CustomError(message="Invalid Expression"))
 
-        if self.is_valid_operator(content=self.content):
+        if self.is_valid_operator_repetition(content=self.content):
+            return self.format(error=CustomError(message="Invalid Expression"))
+
+        if self.is_operator_placement_valid(content=self.content):
             return self.format(error=CustomError(message="Invalid Expression"))
 
         else:
@@ -85,7 +89,7 @@ class Validator:
             return None
 
     @staticmethod
-    def is_valid_operator(content):
+    def is_valid_operator_repetition(content):
         multiple_multiplication = re.search(r"(\*)\1+", content)
         multiple_division = re.search(r"(/)\1+", content)
         multiple_Exponentiation = re.search(r"(\^)\1+", content)
@@ -105,3 +109,10 @@ class Validator:
 
     def is_variable_valid_and_exists(self, content):
         return Variable.is_check(variable=content) and not self.is_in_memory(content=content)
+
+    @staticmethod
+    def is_operator_placement_valid(content):
+        startswith = any([content.startswith(op) for op in OPERATORS])
+        endswith = any([content.endswith(op) for op in OPERATORS])
+
+        return any([startswith, endswith])

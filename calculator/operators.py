@@ -1,6 +1,6 @@
 from functools import reduce
 
-OPERATOR = {
+OPERATORS = {
     "-",
     "+",
     "*",
@@ -22,7 +22,7 @@ class Operator:
 
     @staticmethod
     def is_check(op):
-        return op in OPERATOR
+        return op in OPERATORS
 
     @staticmethod
     def determine_operator_method(op):
