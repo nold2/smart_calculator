@@ -1,6 +1,6 @@
 # Smart Calculator
 
-[![Demo](https://imgur.com/vcqqLCu)]
+[![Demo](https://i.imgur.com/vcqqLCu.gif)]
 
 A basic python REPL application to calculate simple mathematical equation 
 
@@ -17,3 +17,45 @@ The App is divided into:
 8. The `Digit` to represent the numeric operands
 9. The `Operator` to represent the Operator
 10. The `Memory` to represent as a store for numeric value of `Variable`
+
+
+### Feature 
+1. Store and use variables in your equation!
+2. Paranthesis, Multiplication, Division, Exponentiattion, Addition, Subtraction and Assignment!
+3. Stuck? use help! (/help)
+
+### How it works
+```bash
+python calculator/calculator.py
+```
+```python
+
+
+> 8 * 3 + 12 * (4 - 2)
+48
+> 2 - 2 + 3
+3
+> 4 * (2 + 3
+Invalid expression
+> -10
+-10
+> a=4
+> b=5
+> c=6
+> a*2+b*3+c*(2+3)
+53
+> 1 +++ 2 * 3 -- 4
+11
+> 3 *** 5
+Invalid expression
+> 4+3)
+Invalid expression
+> /command
+Unknown command
+> /exit
+Bye!
+```
+
+### Requirements
+
+Tested to work and run properly on python 3.8.5
