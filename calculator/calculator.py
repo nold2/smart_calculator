@@ -4,86 +4,66 @@ from .commands import Command, CommandCenter
 from .digits import Digit
 from .exceptions import CustomError
 from .memories import Memory
-from .operators import Operator
+from .operators import Operator, Precedence, LeftBracket, RightBracket
 from .variables import Variable
 
 
 class Calculator:
     """A Calculator for parsed mathematical equation based on operand and operator"""
 
-    def __init__(self, buffer, memory):
+    def __init__(self, buffer):
         self.buffer = buffer
-        self.memory = memory
         self.__commands = None
         self.__result = deque()
         self.__operators = deque()
-        self.precedence_table = {
-            "^": 2,
-            "*": 1,
-            "/": 1,
-            "+": 0,
-            "-": 0,
-            "(": -1,
-            ")": 1,
-        }
+
+    @staticmethod
+    def peek(queue):
+        return queue[-1]
 
     def calculate(self):
         for v in self.buffer:
             if isinstance(v, Digit):
-                self.__result.append(v)
+                self.__result.append(v.number)
+            elif v == LeftBracket:
+                self.__operators.append(v)
+            elif v == RightBracket:
+                operator = self.__operators.pop()
+
+                while not operator == LeftBracket:
+                    second_operand = self.__result.pop()
+                    first_operand = self.__result.pop()
+
+                    result = operator.execute(first_operand, second_operand)
+                    self.__result.append(result)
+
+                    operator = self.__operators.pop()
             else:
-                pass
-            # try:
-            #     self.__result.append(int(v))
-            # except ValueError:
-            #     try:
-            #         if v == "(":
-            #             self.__operators.append(v)
-            #         elif v == ")":
-            #             operator = self.__operators.pop()
-            #             while not operator == "(":
-            #                 second_operand = self.__result.pop()
-            #                 first_operand = self.__result.pop()
-            #                 result = getattr(Operator(operator), Operator(operator).operator)(first_operand,
-            #                                                                                   second_operand)
-            #
-            #                 self.__result.append(result)
-            #                 operator = self.__operators.pop()
-            #         elif Variable.is_valid(v):
-            #             self.__result.append(int(self.memory.get(v)))
-            #         else:
-            #             while len(self.__operators) and self.precedence_table.get(v) <= self.precedence_table.get(
-            #                     self.__operators[-1]):
-            #                 operator = self.__operators.pop()
-            #                 second_operand = self.__result.pop()
-            #                 first_operand = self.__result.pop()
-            #                 result = getattr(Operator(operator), Operator(operator).operator)(first_operand,
-            #                                                                                   second_operand)
-            #
-            #                 self.__result.append(result)
-            #             self.__operators.append(v)
-            #
-            #     except TypeError:
-            #         print("What the fuck!", v)
+                while len(self.__operators) and Precedence.lte(v, self.peek(self.__operators)):
+                    operator = self.__operators.pop()
+                    second_operand = self.__result.pop()
+                    first_operand = self.__result.pop()
+
+                    result = operator.execute(first_operand, second_operand)
+                    self.__result.append(result)
+
+                self.__operators.append(v)
 
         while len(self.__operators):
             operator = self.__operators.pop()
             second_operand = self.__result.pop()
             first_operand = self.__result.pop()
-            self.__result.append(
-                getattr(Operator(operator), Operator(operator).operator)(first_operand, second_operand))
+            result = operator.execute(first_operand, second_operand)
+            self.__result.append(result)
 
         return self.__result.pop()
 
 
 class Tokenizer:
-    def __init__(self, buffer, operators=None):
-        if operators is None:
-            operators = Operator.OPERATOR
-
+    def __init__(self, buffer, memory):
         self.buffer = buffer
+        self.memory = memory
         self.pos = 0
-        self.operators = operators
         self.tokens = deque()
 
     def __next_token(self):
@@ -94,10 +74,17 @@ class Tokenizer:
 
         if atom is None:
             return None
+
         if Digit.is_check(atom):
             return self.__tokenize(Digit)
+
         if Operator.is_check(atom):
-            return self.__tokenize(Operator)
+            return self.__tokenize(Operator).operator
+
+        if Variable.is_check(atom):
+            var = self.__tokenize(Variable).variable
+            digit = self.memory.get(var)
+            return Digit(digit)
 
     def __tokenize(self, meta):
         end_pos = self.pos + 1
@@ -147,7 +134,7 @@ class Validator:
             key = self.extract_key(self.content)
             value = self.extract_value(self.content)
 
-            if not Variable.is_valid(key):
+            if not Variable.is_check(key):
                 return self.format(error=CustomError(message="Invalid identifier"))
 
             if not Validator.is_valid_assignee(value):
@@ -158,14 +145,14 @@ class Validator:
 
             return self.format(success=({key: value}))
 
-        if Variable.is_valid(variable=self.content) and not self.is_in_memory(content=self.content):
+        if Variable.is_check(variable=self.content) and not self.is_in_memory(content=self.content):
             return self.format(error=CustomError(message="Unknown variable"))
 
         if len(self.content.split()) == 1 and not self.is_valid_assignee(content=self.content):
             return self.format(error=CustomError(message="Unknown variable"))
 
         else:
-            return self.format(success=Tokenizer(buffer=self.content))
+            return self.format(success=Tokenizer(buffer=self.content, memory=self.memory))
 
     @staticmethod
     def format(success=None, error=None):
@@ -180,7 +167,7 @@ class Validator:
     @staticmethod
     def is_valid_assignee(content):
         try:
-            return Variable.is_valid(variable=content) or type(int(content)) == int
+            return Variable.is_check(variable=content) or type(int(content)) == int
         except (TypeError, ValueError):
             return False
 
@@ -222,10 +209,10 @@ def main():
 
         if isinstance(success, Tokenizer):
             parsed_tokens = success.tokenize()
-            print(parsed_tokens)
 
-            calculator = Calculator(buffer=parsed_tokens, memory=memory)
-            calculator.calculate()
+            calculator = Calculator(buffer=parsed_tokens)
+            result = calculator.calculate()
+            print(result)
             # calculator.print()
 
 
