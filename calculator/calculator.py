@@ -19,10 +19,10 @@ class Calculator:
         self.__operators = deque()
 
     @staticmethod
-    def peek(queue):
-        return queue[-1]
+    def peek(stack):
+        return stack[-1]
 
-    def remove_operator_from_stack(self, operator):
+    def calculate_result_stack(self, operator):
         second_operand = self.__result.pop()
         first_operand = self.__result.pop()
         result = operator.execute(first_operand, second_operand)
@@ -32,25 +32,26 @@ class Calculator:
         for v in self.buffer:
             if isinstance(v, Digit):
                 self.__result.append(v.number)
+
             elif v == LeftBracket:
                 self.__operators.append(v)
+
             elif v == RightBracket:
                 operator = self.__operators.pop()
 
                 while not operator == LeftBracket:
-                    self.remove_operator_from_stack(operator=operator)
-
+                    self.calculate_result_stack(operator=operator)
                     operator = self.__operators.pop()
             else:
                 while len(self.__operators) and Precedence.lte(v, self.peek(self.__operators)):
                     operator = self.__operators.pop()
-                    self.remove_operator_from_stack(operator=operator)
+                    self.calculate_result_stack(operator=operator)
 
                 self.__operators.append(v)
 
         while len(self.__operators):
             operator = self.__operators.pop()
-            self.remove_operator_from_stack(operator=operator)
+            self.calculate_result_stack(operator=operator)
 
         return self.__result.pop()
 
