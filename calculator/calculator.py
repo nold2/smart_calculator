@@ -1,11 +1,12 @@
+import re
 from collections import deque
 
-from .commands import Command, CommandCenter
-from .digits import Digit
-from .exceptions import CustomError
-from .memories import Memory
-from .operators import Operator, Precedence, LeftBracket, RightBracket
-from .variables import Variable
+from commands import Command, CommandCenter
+from digits import Digit
+from exceptions import CustomError
+from memories import Memory
+from operators import Operator, Precedence, LeftBracket, RightBracket
+from variables import Variable
 
 
 class Calculator:
@@ -127,7 +128,7 @@ class Validator:
         if not self.content:
             return self.format(error=CustomError(message=None))
 
-        if self.content.startswith("/"):
+        if self.is_command(content=self.content):
             return self.format(success=Command(instruction=self.content.split("/")[1]))
 
         if self.is_assignment(content=self.content):
@@ -145,11 +146,17 @@ class Validator:
 
             return self.format(success=({key: value}))
 
-        if Variable.is_check(variable=self.content) and not self.is_in_memory(content=self.content):
+        if self.is_variable_valid_and_exists(content=self.content):
             return self.format(error=CustomError(message="Unknown variable"))
 
-        if len(self.content.split()) == 1 and not self.is_valid_assignee(content=self.content):
+        if self.is_valid_single_character(content=self.content):
             return self.format(error=CustomError(message="Unknown variable"))
+
+        if self.is_open_and_close_bracket_balance(content=self.content):
+            return self.format(error=CustomError(message="Invalid Expression"))
+
+        if self.is_valid_operator(content=self.content):
+            return self.format(error=CustomError(message="Invalid Expression"))
 
         else:
             return self.format(success=Tokenizer(buffer=self.content, memory=self.memory))
@@ -188,6 +195,28 @@ class Validator:
         except ValueError:
             return None
 
+    @staticmethod
+    def is_valid_operator(content):
+        multiple_multiplication = re.search(r"(\*)\1+", content)
+        multiple_division = re.search(r"(\/)\1+", content)
+        multiple_Exponentiation = re.search(r"(\^)\1+", content)
+
+        return any([multiple_multiplication, multiple_division, multiple_Exponentiation])
+
+    @staticmethod
+    def is_open_and_close_bracket_balance(content):
+        return not content.count("(") == content.count(")")
+
+    def is_valid_single_character(self, content):
+        return len(content.split()) == 1 and not self.is_valid_assignee(content=content)
+
+    @staticmethod
+    def is_command(content):
+        return content.startswith("/")
+
+    def is_variable_valid_and_exists(self, content):
+        return Variable.is_check(variable=content) and not self.is_in_memory(content=content)
+
 
 def main():
     memory = Memory()
@@ -213,7 +242,6 @@ def main():
             calculator = Calculator(buffer=parsed_tokens)
             result = calculator.calculate()
             print(result)
-            # calculator.print()
 
 
 main()
